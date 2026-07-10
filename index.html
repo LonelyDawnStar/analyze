@@ -194,9 +194,9 @@ function runRuleAnalysis(text) {
   const found = SENSATIONAL.filter(w => text.includes(w));
   if (found.length > 0) {
     const p = Math.min(found.length * 6, 24); score -= p;
-    items.push({ delta: -p, label: "선정적 표현", detail: `"${found.slice(0,4).join('", "')}" 등 ${found.length}개 감지` });
+    items.push({ delta: -p, label: "자극적 표현", detail: `"${found.slice(0,4).join('", "')}" 등 ${found.length}개 감지` });
   } else {
-    items.push({ delta: 0, label: "선정적 표현", detail: "낚시성 키워드가 발견되지 않음" });
+    items.push({ delta: 0, label: "자극적 표현", detail: "자극적 표현이 발견되지 않음" });
   }
 
   const ex = (text.match(/[!?]{1,}/g) || []).length;
