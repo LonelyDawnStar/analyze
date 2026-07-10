@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>정보 감식소 — 디지털 정보 신뢰성 판별</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper: #F4F6F5; --card: #FFFFFF; --ink: #182430; --sub: #5A6B7A;
+    --line: #DCE3E2; --blue: #1F5FBF; --trust: #1E7A4C; --caution: #C07A08; --danger: #BE3325;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink);
+    font-family: 'Noto Sans KR', sans-serif; padding: 28px 16px 60px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 28px; }
+  .eyebrow { font-size: 11px; letter-spacing: .22em; color: var(--sub); margin-bottom: 6px; }
+  h1 { font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: 34px; margin: 0; line-height: 1.2; }
+  h1 .dot { color: var(--blue); }
+  header p { color: var(--sub); font-size: 14px; margin: 8px 0 0; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .sec-label { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
+  .sec-label .num { font-family: 'Noto Serif KR', serif; font-size: 13px; font-weight: 700; color: var(--blue); letter-spacing: .08em; }
+  .sec-label .txt { font-size: 13px; font-weight: 700; letter-spacing: .05em; }
+
+  textarea {
+    width: 100%; min-height: 160px; border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px; font-size: 14px; line-height: 1.7; resize: vertical;
+    font-family: inherit; background: var(--paper);
+  }
+  textarea:focus, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .input-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+  .char-count { font-size: 12px; color: var(--sub); }
+  #analyzeBtn {
+    background: var(--ink); color: #fff; border: none; border-radius: 8px;
+    padding: 12px 28px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  #analyzeBtn:disabled { background: var(--line); color: var(--sub); cursor: not-allowed; }
+
+  .verdict { display: flex; gap: 20px; align-items: center; }
+  .verdict-left { flex: 1; }
+  .score { font-family: 'Noto Serif KR', serif; font-size: 52px; font-weight: 900; line-height: 1; }
+  .score small { font-size: 18px; color: var(--sub); font-weight: 600; }
+  .verdict-note { font-size: 13px; color: var(--sub); margin-top: 8px; }
+  .seal {
+    width: 96px; height: 96px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Noto Serif KR', serif; font-weight: 900; font-size: 26px;
+    animation: stamp .45s cubic-bezier(.2,.9,.3,1.2) both;
+  }
+  @keyframes stamp {
+    0% { transform: scale(1.8) rotate(-8deg); opacity: 0; }
+    60% { transform: scale(.95) rotate(-8deg); opacity: 1; }
+    100% { transform: scale(1) rotate(-8deg); opacity: 1; }
+  }
+
+  .rule-item { display: flex; gap: 12px; align-items: flex-start; font-size: 13.5px; margin-bottom: 12px; }
+  .rule-item:last-child { margin-bottom: 0; }
+  .delta { flex-shrink: 0; width: 40px; text-align: center; border-radius: 4px; padding: 2px 0; font-weight: 700; font-size: 12px; }
+  .rule-item .detail { color: var(--sub); }
+
+  .loading-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; overflow: hidden; }
+  .loading-bar span { position: absolute; width: 30%; height: 100%; background: var(--blue); animation: scan 1.2s linear infinite; }
+  @keyframes scan { 0% { left: -30%; } 100% { left: 100%; } }
+  #aiLoading { position: relative; overflow: hidden; }
+  #aiLoading p { color: var(--sub); font-size: 14px; margin: 0; }
+
+  #aiError { background: rgba(190,51,37,.05); border-color: rgba(190,51,37,.33); font-size: 14px; }
+  #aiError .cause { font-size: 12.5px; color: var(--sub); margin-top: 4px; }
+
+  .summary { font-size: 14.5px; line-height: 1.75; margin: 0 0 20px; font-family: 'Noto Serif KR', serif; font-weight: 600; }
+  .criterion { margin-bottom: 14px; }
+  .criterion:last-child { margin-bottom: 0; }
+  .crit-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+  .bar-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; width: 0; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+  .crit-comment { font-size: 12.5px; color: var(--sub); margin-top: 5px; }
+
+  .flag { border-left: 3px solid var(--caution); padding-left: 12px; font-size: 13.5px; margin-bottom: 12px; }
+  .flag:last-child { margin-bottom: 0; }
+  .flag .quote { font-family: 'Noto Serif KR', serif; font-weight: 600; }
+  .flag .reason { color: var(--sub); margin-top: 3px; }
+
+  footer { margin-top: 32px; font-size: 11.5px; color: var(--sub); line-height: 1.6; }
+  .hidden { display: none; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">DIGITAL INFORMATION CREDIBILITY LAB</div>
+    <h1>정보 감식소<span class="dot">.</span></h1>
+    <p>규칙 기반 1차 필터와 AI 2차 정밀 분석으로 텍스트의 신뢰도를 판별합니다.</p>
+  </header>
+
+  <section class="card">
+    <div class="sec-label"><span class="num">검체</span><span class="txt">분석할 텍스트</span></div>
+    <textarea id="inputText" placeholder="뉴스 기사, SNS 게시글, 커뮤니티 글 등의 본문을 붙여넣으세요. (20자 이상)"></textarea>
+    <div class="input-foot">
+      <span class="char-count"><span id="charCount">0</span>자</span>
+      <button id="analyzeBtn" disabled>감식 시작</button>
+    </div>
+  </section>
+
+  <section class="card hidden" id="verdictCard">
+    <div class="verdict">
+      <div class="verdict-left">
+        <div class="sec-label"><span class="num">판정</span><span class="txt">종합 신뢰도</span></div>
+        <div class="score"><span id="finalScore">0</span><small> / 100</small></div>
+        <div class="verdict-note" id="verdictNote"></div>
+      </div>
+      <div class="seal hidden" id="seal"></div>
+    </div>
+  </section>
+
+  <section class="card hidden" id="ruleCard">
+    <div class="sec-label"><span class="num">1차</span><span class="txt">규칙 기반 필터</span></div>
+    <div id="ruleItems"></div>
+  </section>
+
+  <section class="card hidden" id="aiLoading">
+    <div class="sec-label"><span class="num">2차</span><span class="txt">AI 정밀 분석</span></div>
+    <p id="loadingMsg">Claude가 출처·논리·편향성을 정밀 감식하고 있습니다…</p>
+    <div class="loading-bar"><span></span></div>
+  </section>
+
+  <section class="card hidden" id="aiError">
+    <div style="font-weight:700">AI 분석 요청이 실패했습니다.</div>
+    <div class="cause" id="errCause"></div>
+  </section>
+
+  <section class="card hidden" id="aiCard">
+    <div class="sec-label"><span class="num">2차</span><span class="txt">AI 정밀 분석</span></div>
+    <p class="summary" id="aiSummary"></p>
+    <div id="criteria"></div>
+  </section>
+
+  <section class="card hidden" id="flagCard">
+    <div class="sec-label"><span class="num">증거</span><span class="txt">문제 문장</span></div>
+    <div id="flags"></div>
+  </section>
+
+  <footer>※ 본 도구의 판정은 참고용이며, 최종 사실 확인은 반드시 원출처 대조를 통해 이루어져야 합니다.</footer>
+</div>
+
+<script>
+// ─── 1차 규칙 기반 분석 사전 ───
+const SENSATIONAL = ["충격","경악","발칵","소름","헉","알고보니","폭로","멘붕","난리","초비상","긴급","단독","결국","반전","실화","믿기지 않는"];
+const VAGUE_RE = /(누리꾼들?|일각에서|카더라|소문에|~?라는 말이|익명의 (제보자|소식통)|~?썰|어떤 사람들?은)/g;
+const CITATION_RE = /((에|의) 따르면|발표했|연구 결과|조사 결과|통계청|보도자료|공식 입장|밝혔다)/g;
+const DATA_RE = /(\d{4}년|\d{1,2}월 \d{1,2}일|\d+(\.\d+)?%|\d+([만억천])?\s?(명|건|원|개))/g;
+
+function runRuleAnalysis(text) {
+  const items = [];
+  let score = 50;
+
+  const found = SENSATIONAL.filter(w => text.includes(w));
+  if (found.length > 0) {
+    const p = Math.min(found.length * 6, 24); score -= p;
+    items.push({ delta: -p, label: "선정적 표현", detail: `"${found.slice(0,4).join('", "')}" 등 ${found.length}개 감지` });
+  } else {
+    items.push({ delta: 0, label: "선정적 표현", detail: "낚시성 키워드가 발견되지 않음" });
+  }
+
+  const ex = (text.match(/[!?]{1,}/g) || []).length;
+  if (ex >= 3) {
+    const p = Math.min(ex * 2, 12); score -= p;
+    items.push({ delta: -p, label: "감정적 문장부호", detail: `느낌표·물음표 ${ex}회 — 과도한 감정 유도 가능성` });
+  }
+
+  const vg = (text.match(VAGUE_RE) || []).length;
+  if (vg > 0) {
+    const p = Math.min(vg * 7, 21); score -= p;
+    items.push({ delta: -p, label: "모호한 정보 주체", detail: `"누리꾼", "일각에서" 류의 불특정 주체 ${vg}회` });
+  } else {
+    items.push({ delta: 0, label: "정보 주체", detail: "불특정 다수를 근거로 삼는 표현 없음" });
+  }
+
+  const ct = (text.match(CITATION_RE) || []).length;
+  if (ct > 0) {
+    const b = Math.min(ct * 8, 24); score += b;
+    items.push({ delta: b, label: "출처 인용", detail: `공식 발표·인용 표현 ${ct}회 확인` });
+  } else {
+    items.push({ delta: 0, label: "출처 인용", detail: "출처를 밝히는 표현이 없음" });
+  }
+
+  const dt = (text.match(DATA_RE) || []).length;
+  if (dt > 0) {
+    const b = Math.min(dt * 5, 20); score += b;
+    items.push({ delta: b, label: "구체적 수치", detail: `날짜·통계 등 검증 가능한 수치 ${dt}개` });
+  } else {
+    items.push({ delta: 0, label: "구체적 수치", detail: "검증 가능한 날짜·숫자가 없음" });
+  }
+
+  if (text.length < 120) {
+    score -= 8;
+    items.push({ delta: -8, label: "분량", detail: "본문이 짧아 맥락 판단이 어려움" });
+  }
+
+  return { score: Math.max(0, Math.min(100, score)), items };
+}
+
+// ─── 2차 AI 정밀 분석 (서버리스 함수 호출) ───
+async function runAiAnalysis(text) {
+  const res = await fetch("/api/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `서버 응답 ${res.status}`);
+  return data;
+}
+
+// ─── UI ───
+const $ = (id) => document.getElementById(id);
+const gradeColor = (g) => g === "신뢰" ? "var(--trust)" : g === "주의" ? "var(--caution)" : "var(--danger)";
+const gradeHex = (g) => g === "신뢰" ? "#1E7A4C" : g === "주의" ? "#C07A08" : "#BE3325";
+const scoreGrade = (s) => s >= 70 ? "신뢰" : s >= 40 ? "주의" : "위험";
+
+const input = $("inputText"), btn = $("analyzeBtn");
+
+input.addEventListener("input", () => {
+  $("charCount").textContent = input.value.length;
+  btn.disabled = input.value.trim().length < 20;
+});
+
+function showSeal(grade) {
+  const seal = $("seal");
+  seal.classList.remove("hidden");
+  seal.textContent = grade;
+  const hex = gradeHex(grade);
+  seal.style.border = `4px double ${hex}`;
+  seal.style.color = hex;
+  seal.style.background = hex + "0D";
+  seal.style.animation = "none";
+  void seal.offsetWidth; // 애니메이션 재시작 트릭
+  seal.style.animation = "";
+}
+
+function renderRule(rule) {
+  $("ruleCard").classList.remove("hidden");
+  $("ruleItems").innerHTML = rule.items.map(it => {
+    const color = it.delta > 0 ? "#1E7A4C" : it.delta < 0 ? "#BE3325" : "#5A6B7A";
+    const sign = it.delta > 0 ? "+" + it.delta : it.delta < 0 ? it.delta : "—";
+    return `<div class="rule-item">
+      <span class="delta" style="color:${color};background:${color}14">${sign}</span>
+      <div><strong>${it.label}</strong><span class="detail"> · ${it.detail}</span></div>
+    </div>`;
+  }).join("");
+}
+
+function renderAi(ai) {
+  $("aiCard").classList.remove("hidden");
+  $("aiSummary").textContent = ai.summary || "";
+  $("criteria").innerHTML = (ai.criteria || []).map(c => {
+    const color = gradeHex(scoreGrade(c.score));
+    return `<div class="criterion">
+      <div class="crit-head"><strong>${c.name}</strong><span style="color:${color};font-weight:700">${c.score}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="background:${color}" data-w="${c.score}"></div></div>
+      <div class="crit-comment">${c.comment || ""}</div>
+    </div>`;
+  }).join("");
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".bar-fill").forEach(el => el.style.width = el.dataset.w + "%");
+  });
+
+  if (ai.flags && ai.flags.length > 0) {
+    $("flagCard").classList.remove("hidden");
+    $("flags").innerHTML = ai.flags.map(f =>
+      `<div class="flag"><div class="quote">"${f.quote}"</div><div class="reason">${f.reason}</div></div>`
+    ).join("");
+  }
+}
+
+btn.addEventListener("click", async () => {
+  const text = input.value;
+  // 초기화
+  ["aiCard","flagCard","aiError"].forEach(id => $(id).classList.add("hidden"));
+
+  // 1차 규칙 분석 (즉시)
+  const rule = runRuleAnalysis(text);
+  $("verdictCard").classList.remove("hidden");
+  $("finalScore").textContent = rule.score;
+  $("verdictNote").textContent = "1차 규칙 점수 — AI 정밀 분석 대기 중";
+  showSeal(scoreGrade(rule.score));
+  renderRule(rule);
+
+  // 2차 AI 분석 (최대 3회 시도, 실패 시 1.5초 대기)
+  $("aiLoading").classList.remove("hidden");
+  btn.disabled = true;
+  btn.textContent = "분석 중…";
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    $("loadingMsg").textContent = "Claude가 출처·논리·편향성을 정밀 감식하고 있습니다…" + (attempt > 1 ? ` (재시도 ${attempt}/3)` : "");
+    try {
+      const ai = await runAiAnalysis(text);
+      $("aiLoading").classList.add("hidden");
+      $("finalScore").textContent = ai.score;
+      $("verdictNote").textContent = "AI 정밀 분석 반영 완료";
+      showSeal(ai.grade);
+      renderAi(ai);
+      break;
+    } catch (e) {
+      if (attempt === 3) {
+        $("aiLoading").classList.add("hidden");
+        $("aiError").classList.remove("hidden");
+        $("errCause").textContent = `원인: ${e.message} — 잠시 후 다시 시도해주세요.`;
+        $("verdictNote").textContent = "AI 분석 실패 — 1차 규칙 점수만 표시";
+      } else {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = "감식 시작";
+});
+</script>
+</body>
+</html>
