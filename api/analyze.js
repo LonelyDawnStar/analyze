@@ -103,7 +103,7 @@ ${text.slice(0, 2500)}
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o", // 품질 높이려면 "gpt-4o" 등으로 교체
+        model: "gpt-4o-mini", // 품질 높이려면 "gpt-4o" 등으로 교체
         max_tokens: 1024,
         response_format: { type: "json_object" },
         messages: [{ role: "user", content: prompt }],
